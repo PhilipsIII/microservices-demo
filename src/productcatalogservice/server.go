@@ -20,6 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"sync"
@@ -119,6 +121,16 @@ func main() {
 	log.Infof("starting grpc server at :%s", port)
 	run(port)
 	select {}
+	
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	go func() {
+		log.Println(http.ListenAndServe(":6060", mux))
+	}()
 }
 
 func run(port string) string {
